@@ -46,3 +46,22 @@ Implement Python 3.12, FastAPI/Pydantic, Pillow, Transformers/PyTorch and `googl
 Keep detector inputs limited to reference and scene. Store the marked answer separately for scoring. Load the model once, bound concurrent inference, return valid not-found distinctly from errors, and freeze tested thresholds. Do not commit model weights, secrets, virtual environments, or player uploads.
 
 `frontend/tests/mock-api.mjs` is exclusively a contract-test fixture; it is not the detector or a deployment candidate.
+
+### Finalizing a detector result
+
+`scoring.py` resizes the selected AI box to the user's width and height,
+shifts it inside the image, then awards AI a point at IoU >= 0.50.
+The model sees only the images. Size adjustment happens after candidate selection.
+Use the same adjusted box for display and scoring; do not round before comparison.
+
+After successful detection, the future `/seek` handler should call:
+
+```python
+detector_result = detector.detect(record.reference_bytes, record.scene_bytes)
+reveal = round_store.complete(round_id, detector_result)
+```
+
+`complete` locks the first successful result and returns copies on retries.
+It does not deduplicate in-flight model calls; `/seek` must do that separately.
+`/reveal` should return the saved `record.reveal`. These HTTP endpoints and the
+actual detector remain pending; no model is simulated by this Python backend.

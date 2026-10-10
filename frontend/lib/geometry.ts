@@ -18,3 +18,11 @@ export function intersectionOverUnion(a: Box, b: Box) {
   const area = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]);
   return intersection / (area - intersection);
 }
+
+export const IOU_THRESHOLD = 0.5;
+export function matchBoxSize(predicted: Box, width: number, height: number): Box {
+  if (!validBox(predicted) || !Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || width > 1 || height <= 0 || height > 1) throw new Error("Invalid box dimensions");
+  const left = clamp((predicted[0] + predicted[2]) / 2 - width / 2, 0, 1 - width);
+  const top = clamp((predicted[1] + predicted[3]) / 2 - height / 2, 0, 1 - height);
+  return [left, top, left + width, top + height];
+}

@@ -1,5 +1,7 @@
 """Temporary, single-process game storage; no images or answers go to disk."""
 
+from copy import deepcopy
+from scoring import finalize_prediction
 from dataclasses import dataclass
 from hashlib import sha256
 import json
@@ -18,6 +20,7 @@ class Round:
     expires_at: float
     state: str = "ready"
     prediction: dict | None = None
+    reveal: dict | None = None
 
 
 class RoundStore:
@@ -77,3 +80,28 @@ class RoundStore:
             )
             self.creation_requests[key] = (fingerprint, round_id)
             return {"round_id": round_id, "state": "ready"}
+
+    def complete(self, round_id, detector_result):
+        """Lock the adjusted box and score once; call after successful inference.
+
+        This does not schedule inference: /seek must still deduplicate in-flight
+        detector calls. The detector receives only reference and scene bytes.
+        """
+        with self.lock:
+            record = self.rounds.get(round_id)
+            if record is None:
+                raise HTTPException(404, "Round not found.")
+            if record.expires_at <= monotonic():
+                raise HTTPException(410, "Round expired.")
+            if record.reveal is not None:
+                return deepcopy(record.reveal)
+            prediction, result = finalize_prediction(
+                detector_result["prediction"], record.actual_box)
+            reveal = {"round_id": round_id, "state": "complete",
+                      "actual_box": list(record.actual_box),
+                      "prediction": prediction, "result": result,
+                      "model": deepcopy(detector_result["model"])}
+            record.prediction = deepcopy(prediction)
+            record.reveal = reveal
+            record.state = "complete"
+            return deepcopy(reveal)

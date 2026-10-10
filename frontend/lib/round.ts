@@ -1,4 +1,4 @@
-import { validBox, intersectionOverUnion, type Box } from "./geometry.ts";
+import { validBox, intersectionOverUnion, matchBoxSize, IOU_THRESHOLD, type Box } from "./geometry.ts";
 import type { Photo } from "./photo.ts";
 import type { Reveal, RoundApi } from "./api.ts";
 export type Phase = "empty" | "preparing" | "annotating" | "seeking" | "interrupted" | "locked" | "revealing" | "revealed";
@@ -86,12 +86,12 @@ export class Round {
     try {
       let reveal: Reveal;
       if (this.demo) {
-        // Fixed example box. The actual answer never selects or changes the guess.
-        const box: Box = [.36, .32, .59, .57];
+        // Fixed predicted center; only the final dimensions use the answer size.
+        const box = matchBoxSize([.36, .32, .59, .57], actual[2] - actual[0], actual[3] - actual[1]);
         const iou = intersectionOverUnion(box, actual);
         reveal = { round_id: id, state: "complete", actual_box: actual,
           prediction: { status: "found", box, score: .72 },
-          result: { winner: iou >= .3 ? "ai" : "player", iou, iou_threshold: .3 },
+          result: { winner: iou >= IOU_THRESHOLD ? "ai" : "player", iou, iou_threshold: IOU_THRESHOLD },
           model: { id: "simulated-example", threshold: .1, inference_ms: 0 } };
       } else reveal = await this.api.reveal(id, actual, signal);
       if (operation !== this.operation || epoch !== this.epoch) return;

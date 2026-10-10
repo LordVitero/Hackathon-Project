@@ -169,7 +169,7 @@ Record the model identifier, threshold, and inference duration for debugging and
 
 ### Scoring
 
-**Proposed starting rule:** AI wins when its predicted box has intersection-over-union (IoU) of at least **0.3** with the actual target box. Otherwise the player wins. IoU measures overlap relative to the combined area of both boxes.
+**Game rule:** AI wins when its predicted box has intersection-over-union (IoU) of at least **0.5** with the actual target box. Otherwise the player wins. IoU measures overlap relative to the combined area of both boxes.
 
 This value is provisional. Test it against real predictions, including boxes that locate Lenny but fit imperfectly. Choose and freeze the rule before scored gameplay. Show both boxes, and allow a teammate to adjudicate disputed demo rounds.
 
@@ -247,3 +247,5 @@ Defer these until the main loop is reliable:
 Possible stretch features: custom reference upload, additional reference angles, public leaderboard, or tested image tiling. Add at most one that improves the demonstrated game.
 
 **Shared priority:** Make one complete, fair, understandable round work reliably, then make the reveal and rematch memorable.
+
+The AI is given the marked box size after detection. It must locate the object itself. Apply `backend/scoring.py` through `RoundStore.complete` before storing a reveal; never resize using the answer center.

@@ -62,7 +62,7 @@ Return non-2xx on inference failure. Do not encode inference errors as `not_foun
   "state":"complete",
   "prediction":{"status":"found","box":[0.40,0.40,0.60,0.60],"score":0.82},
   "actual_box":[0.40,0.40,0.60,0.60],
-  "result":{"winner":"ai","iou":1.0,"iou_threshold":0.3},
+  "result":{"winner":"ai","iou":1.0,"iou_threshold":0.5},
   "model":{"id":"google/owlvit-base-patch16","threshold":0.1,"inference_ms":1300}
 }
 ```
@@ -75,16 +75,16 @@ For a valid miss:
   "state":"complete",
   "prediction":{"status":"not_found","box":null,"score":null},
   "actual_box":[0.40,0.40,0.60,0.60],
-  "result":{"winner":"player","iou":0.0,"iou_threshold":0.3},
+  "result":{"winner":"player","iou":0.0,"iou_threshold":0.5},
   "model":{"id":"google/owlvit-base-patch16","threshold":0.1,"inference_ms":1300}
 }
 ```
 
 Detection score and threshold must be finite numbers in `[0,1]`. Model scores are **not calibrated probabilities**. Inference duration is finite nonnegative milliseconds. Model ID must be a nonempty string. Select the highest-scoring valid prediction above a fixed tested threshold, as outlined; the example threshold above is illustrative, not model-tested.
 
-`winner` is `ai` when a found box has IoU at least `iou_threshold`; otherwise it is `player`. A `not_found` result has IoU zero. Threshold must be in `(0,1]`. The frontend recomputes IoU as an integration check, tolerating 0.005 numeric rounding, and verifies the returned actual box matches its locked answer. Invalid responses remain recoverable errors and award no score.
+`winner` is `ai` when a found box has IoU at least `iou_threshold`; otherwise it is `player`. A `not_found` result has IoU zero. Threshold must be exactly `0.5`. The frontend recomputes IoU as an integration check, tolerating 0.005 numeric rounding, and verifies the returned actual box matches its locked answer. Invalid responses remain recoverable errors and award no score.
 
-An oversized whole-image prediction does not automatically win: it is subject to the same IoU rule. Freeze the scoring threshold before real gameplay; the outline's 0.3 is provisional.
+After candidate selection, resize the box to the marked answer width and height around the predicted center. Shift it inside image bounds without shrinking. Store, display, and score this adjusted box; preserve the detection score. Only size is shared, never answer position. The fixed winning threshold is 0.5 IoU, including equality. This is intersection / union, not intersection / answer area.
 
 ## Human review and cancellation
 
@@ -97,3 +97,5 @@ Cancellation aborts client fetches and prevents stale results from updating the 
 Allow the actual frontend origin, `GET/POST/OPTIONS`, and `Content-Type, Idempotency-Key` request headers. Use HTTPS for camera access beyond localhost and to avoid mixed-content API failures. Endpoint URLs are public configuration and must contain no secrets. The MVP requires no accounts or browser credentials.
 
 The browser retains at most five scene URLs for history and releases stale image URLs. Refresh loses session state. The backend team must set its own upload/round expiry, concurrency, byte/pixel limits, and retention policy. The frontend does not claim that transmitted photos remain exclusively on the device.
+
+The AI is given the marked box size after detection. It must locate the object itself. Apply `backend/scoring.py` through `RoundStore.complete` before storing a reveal; never resize using the answer center.

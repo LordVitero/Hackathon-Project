@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { boxFromPoints, intersectionOverUnion, pointFromClient, validBox } from "../../lib/geometry.ts";
+import { boxFromPoints, intersectionOverUnion, matchBoxSize, IOU_THRESHOLD, pointFromClient, validBox } from "../../lib/geometry.ts";
 
 test("normalized points remain identical for portrait, landscape, mobile, and wide images", () => {
   for (const [width, height] of [[600, 900], [1000, 500], [300, 450], [340, 85]]) {
@@ -22,4 +22,16 @@ test("IoU scores exact, missed, and oversized predictions correctly", () => {
   assert.equal(intersectionOverUnion([.4, .4, .6, .6], [.4, .4, .6, .6]), 1);
   assert.equal(intersectionOverUnion([0, 0, .2, .2], [.4, .4, .6, .6]), 0);
   assert.ok(Math.abs(intersectionOverUnion([0, 0, 1, 1], [.4, .4, .6, .6]) - .04) < .00001);
+});
+
+test("same-size boxes preserve dimensions at edges and use inclusive 50% IoU", () => {
+  for (const box of [[0, 0, .02, .02], [.98, .98, 1, 1]] as const) {
+    const adjusted = matchBoxSize(box, .4, .6);
+    assert.ok(validBox(adjusted));
+    assert.ok(Math.abs(adjusted[2] - adjusted[0] - .4) < 1e-12);
+    assert.ok(Math.abs(adjusted[3] - adjusted[1] - .6) < 1e-12);
+  }
+  const actual = [0, 0, .375, .5] as const;
+  assert.equal(intersectionOverUnion([.125, 0, .5, .5], actual), IOU_THRESHOLD);
+  assert.ok(intersectionOverUnion([.126, 0, .501, .5], actual) < IOU_THRESHOLD);
 });

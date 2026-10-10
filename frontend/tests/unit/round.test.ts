@@ -6,7 +6,7 @@ import type { Photo } from "../../lib/photo.ts";
 import type { Box } from "../../lib/geometry.ts";
 const actual: Box = [.4, .4, .6, .6];
 function photo(name = "photo"): Photo { return { blob: new Blob([name]), url: "blob:" + name, width: 400, height: 600, dispose() {} }; }
-function result(id = "one"): Reveal { return { round_id: id, state: "complete", actual_box: actual, prediction: { status: "found", box: actual, score: .7 }, result: { winner: "ai", iou: 1, iou_threshold: .3 }, model: { id: "test-only", threshold: .1, inference_ms: 1 } }; }
+function result(id = "one"): Reveal { return { round_id: id, state: "complete", actual_box: actual, prediction: { status: "found", box: actual, score: .7 }, result: { winner: "ai", iou: 1, iou_threshold: .5 }, model: { id: "test-only", threshold: .1, inference_ms: 1 } }; }
 function api(overrides: Partial<RoundApi> = {}): RoundApi { return { create: async () => "one", seek: async () => {}, reveal: async id => result(id), ...overrides }; }
 function ready(service = api(), demo = false) {
   const round = new Round(service, demo); round.loadReference(photo("reference")); round.loadScene(round.beginLoad(), photo()); round.annotate(actual); return round;
@@ -53,12 +53,12 @@ test("server errors never award a win; review notes do not submit or change scor
   round.api = api(); await round.reveal(); round.review("Flagged", [0, 0, .2, .2]);
   assert.deepEqual(round.state.actual, actual); assert.equal(round.state.scores.ai, 1); assert.equal(round.state.history[0].note, "Flagged");
 });
-test("demo guess is fixed independent of ground truth and increments only demo scores", async () => {
+test("demo location is independent of answer position and increments only demo scores", async () => {
   const round = ready(api(), true); await round.seek(); await round.reveal();
   const firstBox = round.state.reveal!.prediction.box; assert.equal(round.state.scores.ai + round.state.scores.player, 0);
   assert.equal(round.state.demoScores.ai + round.state.demoScores.player, 1);
   round.clearScene(); round.loadScene(round.beginLoad(), photo("other")); round.annotate([0, 0, .2, .2]); await round.seek(); await round.reveal();
-  assert.deepEqual(round.state.reveal!.prediction.box, firstBox); assert.equal(round.state.history[0].demo, true);
+  assert.ok(round.state.reveal!.prediction.box!.every((n, i) => Math.abs(n - firstBox![i]) < 1e-12)); assert.equal(round.state.history[0].demo, true);
 });
 test("history retains five scenes, frees older image URLs, and releases each photo once", async () => {
   let counter = 0;

@@ -43,11 +43,15 @@ const server = createServer(async (req, res) => {
     events.push({ action: "reveal", id: round.id });
     if (round.settings.failRevealOnce) { round.settings.failRevealOnce = false; return send({ error: "temporary error" }, 503); }
     if (!round.locked) return send({ error: "not locked" }, 409);
-    const box = round.settings.box ?? [.4, .4, .6, .6];
+    const rawBox = round.settings.box ?? [.4, .4, .6, .6];
+    const width = round.actual[2] - round.actual[0], height = round.actual[3] - round.actual[1];
+    const left = Math.max(0, Math.min((rawBox[0] + rawBox[2]) / 2 - width / 2, 1 - width));
+    const top = Math.max(0, Math.min((rawBox[1] + rawBox[3]) / 2 - height / 2, 1 - height));
+    const box = [left, top, left + width, top + height];
     const overlap = round.settings.notFound ? 0 : iou(box, round.actual);
     return send({ round_id: round.id, state: "complete", actual_box: round.actual,
       prediction: round.settings.notFound ? { status: "not_found", box: null, score: null } : { status: "found", box, score: .82 },
-      result: { winner: !round.settings.notFound && overlap >= .3 ? "ai" : "player", iou: overlap, iou_threshold: .3 },
+      result: { winner: !round.settings.notFound && overlap >= .5 ? "ai" : "player", iou: overlap, iou_threshold: .5 },
       model: { id: "contract-test-fixture", threshold: .1, inference_ms: 10 } });
   } catch (error) { send({ error: String(error) }, 500); }
 });

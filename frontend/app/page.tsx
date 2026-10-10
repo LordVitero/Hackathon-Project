@@ -189,7 +189,7 @@ export default function Home() {
             {phase === "locked" && <><p>The guess is locked. Let’s see how well you hid Lenny.</p><div className="actions"><button className="button primary" type="button" onClick={() => roundRef.current!.reveal()}>Reveal the guess</button></div></>}
             {phase === "revealed" && reveal && <>
               <p>{reveal.prediction.status === "not_found" ? "The model returned a valid “not found” result. You win this round." : reveal.result.winner === "ai" ? "The guess overlaps your marked spot enough to win." : "The guess missed your marked spot. Nicely hidden."}</p>
-              <p className="small-note">Box overlap (IoU): {reveal.result.iou.toFixed(2)} · Winning threshold: {reveal.result.iou_threshold.toFixed(2)}{demo ? " (demo rule)" : ""}</p>
+              <p className="small-note">AI uses your box size; finds its own location. Wins at 50% IoU. Box overlap (IoU): {reveal.result.iou.toFixed(2)} · Winning threshold: {reveal.result.iou_threshold.toFixed(2)}{demo ? " (demo rule)" : ""}</p>
               {reveal.prediction.status === "found" && <p className="small-note">Detection score: {reveal.prediction.score.toFixed(2)}. This is a model score, not a probability of correctness.</p>}
               {!demo && <details className="model-details"><summary>Model details</summary><p>{reveal.model.id} · Detection threshold {reveal.model.threshold} · {(reveal.model.inference_ms / 1000).toFixed(1)}s inference</p></details>}
               {reviewing ? <>

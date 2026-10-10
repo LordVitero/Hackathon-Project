@@ -1,4 +1,4 @@
-import { intersectionOverUnion, validBox, type Box } from "./geometry.ts";
+import { intersectionOverUnion, validBox, IOU_THRESHOLD, type Box } from "./geometry.ts";
 import type { Photo } from "./photo.ts";
 export type Prediction = { status: "found"; box: Box; score: number } | { status: "not_found"; box: null; score: null };
 export type Reveal = {
@@ -20,7 +20,11 @@ export function parseReveal(value: unknown, id: string, actual: Box): Reveal {
   const data = record(value), p = record(data.prediction), r = record(data.result), m = record(data.model);
   if (data.round_id !== id || data.state !== "complete" || !validBox(data.actual_box) || data.actual_box.some((n, i) => Math.abs(n - actual[i]) > .00001)) throw new Error("The reveal does not match this round’s locked answer.");
   if (!(p.status === "found" && validBox(p.box) && unit(p.score)) && !(p.status === "not_found" && p.box === null && p.score === null)) throw new Error("The server returned an invalid prediction. Expected a normalized box or not_found.");
-  if (!unit(r.iou) || !unit(r.iou_threshold) || r.iou_threshold === 0 || !["ai", "player"].includes(String(r.winner))) throw new Error("The server returned an invalid score.");
+  if (!unit(r.iou) || !unit(r.iou_threshold) || r.iou_threshold !== IOU_THRESHOLD || !["ai", "player"].includes(String(r.winner))) throw new Error("The server returned an invalid score.");
+  if (p.status === "found") {
+    const box = p.box as Box;
+    if (Math.abs((box[2] - box[0]) - (actual[2] - actual[0])) > .00001 || Math.abs((box[3] - box[1]) - (actual[3] - actual[1])) > .00001) throw new Error("The AI box must match your box's width and height.");
+  }
   const iou = p.status === "found" ? intersectionOverUnion(p.box as Box, actual) : 0;
   if (Math.abs(iou - r.iou) > .005 || r.winner !== (p.status === "found" && iou >= r.iou_threshold ? "ai" : "player")) throw new Error("The server’s score does not match the revealed boxes.");
   if (typeof m.id !== "string" || !m.id || !unit(m.threshold) || typeof m.inference_ms !== "number" || !Number.isFinite(m.inference_ms) || m.inference_ms < 0) throw new Error("The server returned invalid model metadata.");
