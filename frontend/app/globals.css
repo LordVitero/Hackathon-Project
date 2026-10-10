@@ -12,8 +12,8 @@ button:disabled { cursor: default; opacity: .55; }
 .site-header { max-width: 1160px; margin: auto; padding: 28px 40px; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
 .wordmark { display: inline-flex; gap: 8px; align-items: center; color: #203c2d; font-size: 28px; letter-spacing: -1.5px; font-weight: 900; }
 .wordmark-dot { color: #5b8d37; }
-.mascot { width: 46px; height: 46px; flex-shrink: 0; }
-.mascot.large { width: 108px; height: 108px; margin: 0 auto 6px; display: block; }
+.mascot { width: 46px; height: 46px; flex-shrink: 0; object-fit: contain; }
+.mascot.large { width: 108px; height: auto; aspect-ratio: 720 / 940; margin: 0 auto 6px; display: block; }
 .header-note { font-size: 13px; color: var(--muted); }
 main { width: min(900px, calc(100% - 48px)); margin: auto; }
 .intro { text-align: center; margin: 26px auto 32px; }

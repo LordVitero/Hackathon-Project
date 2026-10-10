@@ -2,6 +2,8 @@
 
 Frontend for the Knight Hacks IX photo hide-and-seek game, built to the [supplied project outline](docs/project-outline.md). Next.js, TypeScript, and Tailwind CSS; no accounts, lobbies, multiplayer, or live video detection. See [verification results](docs/VERIFICATION.md) for the completed checks and integration limits.
 
+The app uses the supplied Lenny SVG in `frontend/public/lenny.svg` for its mascot and browser icon.
+
 ## Run locally
 
 Requires Node.js 22.18+ and npm. The checked-in lockfile pins frontend dependency versions.
