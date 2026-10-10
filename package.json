@@ -1,0 +1,14 @@
+{
+  "name": "hide-lenny",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix frontend run start",
+    "test": "npm --prefix frontend test",
+    "test:browser": "npm --prefix frontend run test:browser",
+    "check": "npm test && npm --prefix frontend run typecheck && npm run test:browser && npm run build"
+  }
+}
