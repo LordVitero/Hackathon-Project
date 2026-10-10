@@ -162,3 +162,45 @@ test("demo round is labeled, never uploads, and keeps scores separate; save QA s
   await page.getByRole("button", { name: "Hide Lenny again" }).click();
   await page.getByLabel("Try a simulated round").uncheck(); await expect(page.locator(".header-note")).toContainText("Session · You 0 / AI 0");
 });
+
+test("local mouse and touch boxes survive resizing, clearing, and a second finger", async ({ page, request }) => {
+  await page.getByLabel("Try a simulated round").check();
+  await reference(page); await scene(page);
+  let bounds = (await page.locator(".round .photo-stage > img").boundingBox())!;
+  // Drawing backwards must still save coordinates in min/max order.
+  await page.mouse.move(bounds.x + bounds.width * .8, bounds.y + bounds.height * .8);
+  await page.mouse.down();
+  await page.mouse.move(bounds.x + bounds.width * .2, bounds.y + bounds.height * .3, { steps: 5 });
+  await page.mouse.up();
+  await aligned(page, "actual-box", [.2, .3, .8, .8]);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await aligned(page, "actual-box", [.2, .3, .8, .8]);
+  await page.getByRole("button", { name: "Clear box", exact: true }).click();
+  await expect(page.getByTestId("actual-box")).toHaveCount(0);
+
+  await page.locator(".round .photo-stage > img").scrollIntoViewIfNeeded();
+  bounds = (await page.locator(".round .photo-stage > img").boundingBox())!;
+  // Chromium touch input exercises real pointer capture rather than synthetic DOM events.
+  const input = await page.context().newCDPSession(page);
+  const finger = (id: number, x: number, y: number) => ({ id, x: bounds.x + bounds.width * x, y: bounds.y + bounds.height * y });
+  await input.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [finger(1, .2, .3)] });
+  await input.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [finger(1, .6, .65)] });
+  await aligned(page, "actual-box", [.2, .3, .6, .65]);
+  await input.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [finger(1, .6, .65), finger(2, .85, .85)] });
+  await input.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [finger(1, .6, .65), finger(2, .95, .95)] });
+  await aligned(page, "actual-box", [.2, .3, .6, .65]);
+  // Removing the second point from the active list releases only that finger.
+  await input.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [finger(1, .6, .65)] });
+  await input.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [finger(1, .7, .8)] });
+  await input.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await aligned(page, "actual-box", [.2, .3, .7, .8]);
+  await page.setViewportSize({ width: 320, height: 700 });
+  await aligned(page, "actual-box", [.2, .3, .7, .8]);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await aligned(page, "actual-box", [.2, .3, .7, .8]);
+  await input.detach();
+  await mkdir("artifacts", { recursive: true });
+  await page.screenshot({ path: "artifacts/local-annotation.png", fullPage: true });
+  // This milestone remains browser-local, even though the harness has a test API.
+  expect(await (await request.get(api + "/test/events")).json()).toEqual([]);
+});
