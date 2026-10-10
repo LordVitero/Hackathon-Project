@@ -6,10 +6,10 @@ export async function preparePhoto(file: Blob): Promise<Photo> {
   try { bitmap = await createImageBitmap(file, { imageOrientation: "from-image" }); }
   catch { throw new Error("Couldn’t read this photo. Please choose another image."); }
   try {
-    const scale = Math.min(1, 2400 / Math.max(bitmap.width, bitmap.height));
     const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    // Resize the full image to the model's input size without cropping.
+    canvas.width = 960;
+    canvas.height = 960;
     const context = canvas.getContext("2d");
     if (!context) throw new Error("Your browser couldn’t prepare the photo.");
     context.fillStyle = "white"; context.fillRect(0, 0, canvas.width, canvas.height);

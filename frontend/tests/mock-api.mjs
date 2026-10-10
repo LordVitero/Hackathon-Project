@@ -24,7 +24,8 @@ const server = createServer(async (req, res) => {
       const reference = form.get("reference_image"), scene = form.get("scene_image"), actual = JSON.parse(form.get("actual_box"));
       if (!(reference instanceof Blob) || !(scene instanceof Blob) || reference.type !== "image/jpeg" || scene.type !== "image/jpeg") return send({ error: "Expected two JPEG images" }, 422);
       const meta = await sharp(Buffer.from(await scene.arrayBuffer())).metadata();
-      events.push({ action: "create", key, actual, sceneType: scene.type, referenceType: reference.type, width: meta.width, height: meta.height, orientation: meta.orientation ?? 1 });
+      const referenceMeta = await sharp(Buffer.from(await reference.arrayBuffer())).metadata();
+      events.push({ action: "create", key, actual, sceneType: scene.type, referenceType: reference.type, width: meta.width, height: meta.height, referenceWidth: referenceMeta.width, referenceHeight: referenceMeta.height, orientation: meta.orientation ?? 1 });
       let round = keys.get(key);
       if (!round) { round = { id: "round-" + (++counter), actual, sceneMeta: meta, locked: false, settings: { ...settings } }; keys.set(key, round); rounds.set(round.id, round); }
       if (round.settings.createDelay) await new Promise(resolve => setTimeout(resolve, round.settings.createDelay));
