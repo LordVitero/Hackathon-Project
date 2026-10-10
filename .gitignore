@@ -8,3 +8,6 @@ playwright-report/
 !.env.example
 artifacts/
 next-env.d.ts
+.venv/
+__pycache__/
+*.pyc
