@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { boxFromPoints, boxStyle, clamp, pointFromClient, type Box } from "../lib/geometry";
 import type { Photo } from "../lib/photo";
 export function PhotoBoard({ photo, actual, prediction, editable = false, onChange, compact = false }: {
@@ -7,8 +7,12 @@ export function PhotoBoard({ photo, actual, prediction, editable = false, onChan
 }) {
   const image = useRef<HTMLImageElement>(null);
   const start = useRef<readonly [number, number] | null>(null);
-  const moved = useRef(false);
+  // Only the pointer that started the rectangle can move or finish it.
+  const pointer = useRef<number | null>(null);
   const [draft, setDraft] = useState<Box | null>(null);
+  useEffect(() => {
+    start.current = null; pointer.current = null; setDraft(null);
+  }, [photo, editable]);
   const displayed = draft ?? actual;
   function point(e: React.PointerEvent) { return image.current ? pointFromClient(e.clientX, e.clientY, image.current.getBoundingClientRect()) : null; }
   function changeEdge(index: number, value: number) {
@@ -20,26 +24,31 @@ export function PhotoBoard({ photo, actual, prediction, editable = false, onChan
   return <div className={compact ? "board compact" : "board"}>
     <figure className={editable ? "photo-stage editable" : "photo-stage"}
       onPointerDown={e => {
-        if (!editable || e.button !== 0) return;
+        if (!editable || !e.isPrimary || e.button !== 0 || pointer.current !== null) return;
         const p = point(e); if (!p) return;
-        start.current = p; moved.current = false; setDraft(null);
+        start.current = p; pointer.current = e.pointerId; setDraft(null);
         e.currentTarget.setPointerCapture(e.pointerId);
       }}
       onPointerMove={e => {
-        if (!editable || !start.current) return;
+        if (!editable || !start.current || pointer.current !== e.pointerId) return;
         const p = point(e); if (!p) return;
         const box = boxFromPoints(start.current, p);
-        if (box) { moved.current = true; setDraft(box); }
+        setDraft(box);
       }}
       onPointerUp={e => {
-        if (!editable || !start.current) return;
+        if (!editable || !start.current || pointer.current !== e.pointerId) return;
         const p = point(e);
         const box = p ? boxFromPoints(start.current, p) : null;
-        if (moved.current && box) onChange?.(box);
-        start.current = null; setDraft(null);
+        if (box) onChange?.(box);
+        start.current = null; pointer.current = null; setDraft(null);
         if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
       }}
-      onPointerCancel={() => { start.current = null; setDraft(null); }}
+      onPointerCancel={e => {
+        if (pointer.current === e.pointerId) { start.current = null; pointer.current = null; setDraft(null); }
+      }}
+      onLostPointerCapture={e => {
+        if (pointer.current === e.pointerId) { start.current = null; pointer.current = null; setDraft(null); }
+      }}
     >
       {/* Native image preserves the exact submitted pixels and intrinsic aspect ratio. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}

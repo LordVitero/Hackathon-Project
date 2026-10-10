@@ -12,6 +12,12 @@
 
 The full seven-scenario browser suite passed; the subsequently added large-image and saved-review cases also passed targeted reruns. Screenshots are generated locally at `frontend/artifacts/desktop-start.png`, `desktop-reveal.png`, and `mobile-reveal.png`. They depict synthetic coordinate fixtures, not real Lenny inference results.
 
+## Local annotation review follow-up
+
+Reused Alex’s frontend from `106b3bd` and kept the artwork update in `224cd16`. The only feature-code change is in `PhotoBoard`: the pointer that starts a rectangle now keeps control of it, so a second finger cannot replace or finish that drag. Canceled/lost pointers and changes of photo or edit mode clear the unfinished drawing.
+
+The 16 unit tests, full 8-scenario browser suite, and production build passed locally. After the artwork update, the local demo and touch scenarios and the production build passed again. The added browser scenario checks backward mouse drawing, clear/redraw, actual Chromium touch input with a second finger, alignment after resizing to 390px and 320px and back to desktop, and zero photo-upload requests in demo mode. These touch inputs are simulated; a physical phone remains untested. Existing desktop and mobile screenshots were inspected.
+
 ## Remaining unverified / team handoff
 
 - No real Lenny reference photo was supplied. Default-photo configuration is ready; reference upload is usable meanwhile.
