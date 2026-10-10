@@ -35,7 +35,7 @@ Use HTTPS for both applications in deployment. The FastAPI service must permit t
 ## How rounds work
 
 - The player marks a recognizable, physically hidden Lenny before seeking. A teammate or judge verifies fairness; annotation does not verify it automatically.
-- The browser orients each input, converts to JPEG, and limits its longest edge to 2400 pixels. The displayed scene is the exact JPEG uploaded; normalized boxes refer to that complete image.
+- The browser orients each input, resizes the full image to exactly 960 × 960 pixels (stretching rectangular photos), and converts to JPEG. The displayed scene is the exact JPEG uploaded; normalized boxes refer to that complete image.
 - Before seeking, the actual box is editable by dragging a new box or changing four keyboard-accessible edge sliders. After seeking starts, it is frozen.
 - Creation retries reuse an idempotency key. Seek retries reuse the round ID. The backend must lock and deduplicate inference; browser cancellation may not cancel server computation.
 - Seek locks a prediction without revealing it. Reveal returns both boxes and the server's score. A valid `not_found` awards a player point. A failed request never awards a point.

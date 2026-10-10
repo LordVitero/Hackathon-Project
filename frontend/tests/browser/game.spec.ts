@@ -39,8 +39,11 @@ test("portrait, landscape, panorama and EXIF rotation stay aligned through mobil
     await page.setViewportSize({ width: 1280, height: 900 });
   }
   const events = await (await request.get(api + "/test/events")).json();
-  expect(events.filter((e: { action: string }) => e.action === "create").at(-1)).toMatchObject({ width: 600, height: 1000, orientation: 1, sceneType: "image/jpeg", referenceType: "image/jpeg" });
-  expect(events.filter((e: { action: string }) => e.action === "create").at(-2)).toMatchObject({ width: 2400, height: 900 });
+  const uploads = events.filter((e: { action: string }) => e.action === "create");
+  expect(uploads).toHaveLength(5);
+  for (const upload of uploads) {
+    expect(upload).toMatchObject({ width: 960, height: 960, referenceWidth: 960, referenceHeight: 960, orientation: 1, sceneType: "image/jpeg", referenceType: "image/jpeg" });
+  }
   expect(events.filter((e: { action: string }) => e.action === "seek").every((e: { bodyBytes: number }) => e.bodyBytes === 0)).toBe(true);
   expect(await page.locator(".history-grid li").count()).toBe(5);
 });

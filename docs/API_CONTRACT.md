@@ -6,7 +6,7 @@ Implements the proposed defaults in the supplied project outline. **This is a co
 
 Boxes are normalized `[x_min, y_min, x_max, y_max]`, measured from the top-left of the **complete, correctly oriented scene**. Values must be finite numbers in `[0,1]`, with `x_max > x_min` and `y_max > y_min`. `0` and `1` are valid image edges. No CSS cropping, mirrored previews, or letterbox offsets are part of the coordinate system.
 
-The browser applies EXIF orientation, scales the longest edge to at most 2400 pixels, composites transparency over white, and encodes JPEG at quality 0.92. The same resulting JPEG is previewed and uploaded. The backend must decode/validate both images with Pillow and avoid rotating these canonical images a second time. The actual box refers to the submitted scene, not the original camera file. Uploads accept source JPEG, PNG, and WebP under 12 MB.
+The browser applies EXIF orientation, resizes the entire reference and scene images to exactly 960 × 960 pixels without cropping or padding, composites transparency over white, and encodes JPEG at quality 0.92. Rectangular inputs are stretched to square. The same resulting JPEG is previewed and uploaded. The backend must decode/validate both images with Pillow and avoid rotating these canonical images a second time. The actual box refers to the submitted scene, not the original camera file. Uploads accept source JPEG, PNG, and WebP under 12 MB.
 
 Keep `actual_box` in the round/scoring layer. **Detection and candidate selection receive only reference image + scene image.** Never crop to the answer, choose candidates using it, or tune the threshold from it.
 
