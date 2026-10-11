@@ -36,3 +36,20 @@ The 16 unit tests, full 8-scenario browser suite, and production build passed lo
 - No server feedback or fine-tuning endpoint is part of the outline; review actions remain local and are explicitly labeled.
 
 The frontend is ready for backend integration. The full deployed, real-model project is not represented as finished.
+
+
+## Local CPU backend integration
+
+- Added real OWL-ViT loading, shared per-round seek tasks, bounded inference,
+  immutable scoring/reveal, and frontend `/api` forwarding to local Python.
+- 19 backend tests and 19 frontend unit tests pass. Backend HTTP tests use ASGI
+  requests with a labeled detector stub; they cover the full upload/seek/reveal
+  contract but do not establish model accuracy.
+- TypeScript validation and production build with `--webpack` pass. Default
+  Turbopack build encountered sandbox filesystem restrictions during this run.
+- Local `.venv-local`, model cache, and `.env.local` are excluded from Git.
+
+- Real CPU smoke test: OWL-ViT loaded and returned a finite normalized box using
+  `sample-images/lenny_1.png` as both reference and scene. Inference took about
+  7.3 seconds on this machine. This confirms execution, not hidden-scene accuracy.
+  Tested PyTorch 2.14.1+cpu, torchvision 0.29.1+cpu, Transformers 4.57.6.

@@ -105,3 +105,24 @@ class RoundStore:
             record.reveal = reveal
             record.state = "complete"
             return deepcopy(reveal)
+
+    def get(self, round_id):
+        """Internal lookup; callers must never return image bytes or answers early."""
+        with self.lock:
+            record = self.rounds.get(round_id)
+            if record is None:
+                raise HTTPException(404, "Round not found or no longer retained.")
+            if record.expires_at <= monotonic():
+                raise HTTPException(410, "Round expired.")
+            return record
+
+    def get_reveal(self, round_id):
+        with self.lock:
+            record = self.rounds.get(round_id)
+            if record is None:
+                raise HTTPException(404, "Round not found or no longer retained.")
+            if record.expires_at <= monotonic():
+                raise HTTPException(410, "Round expired.")
+            if record.reveal is None:
+                raise HTTPException(409, "Prediction is not locked yet.")
+            return deepcopy(record.reveal)
