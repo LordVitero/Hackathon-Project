@@ -27,6 +27,50 @@ async function aligned(page: Page, testId: string, box: number[]) {
 }
 test.beforeEach(async ({ page, request }) => { await request.post(api + "/test/reset", { data: {} }); await page.goto("/"); await expect(page.locator(".app-shell")).toHaveAttribute("data-ready", "true"); });
 
+test("upload, lock, and reveal work when randomUUID is unavailable", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.addInitScript(() => Object.defineProperty(crypto, "randomUUID", { value: undefined, configurable: true }));
+  await page.reload();
+  await reference(page); await scene(page); await mark(page); await lock(page); await reveal(page);
+  expect(errors).toEqual([]);
+  await expect(page.locator(".header-note")).toContainText("You 0 / AI 1");
+});
+
+test("invalid photo uploads show an error and recover with a valid photo", async ({ page }) => {
+  for (const [file, message] of [
+    [{ name: "empty.jpg", mimeType: "image/jpeg", buffer: Buffer.alloc(0) }, /nonempty photo under 12 MB/],
+    [{ name: "large.jpg", mimeType: "image/jpeg", buffer: Buffer.alloc(12 * 1024 * 1024 + 1) }, /nonempty photo under 12 MB/],
+    [{ name: "unsupported.gif", mimeType: "image/gif", buffer: Buffer.from("GIF89a") }, /Choose a JPEG, PNG, or WebP/],
+    [{ name: "broken.jpg", mimeType: "image/jpeg", buffer: Buffer.from("not an image") }, /read this photo/],
+  ] as const) {
+    await page.getByLabel("Reference photo upload", { exact: true }).setInputFiles(file);
+    await expect(page.locator(".error-message")).toContainText(message);
+    await expect(page.getByRole("button", { name: "Take a photo", exact: true })).toBeDisabled();
+  }
+  await reference(page); await scene(page); await mark(page); await lock(page); await reveal(page);
+  await expect(page.locator(".error-message")).toHaveCount(0);
+});
+
+test("PNG and transparent WebP sources become white-backed 960x960 JPEG uploads", async ({ page, request }) => {
+  const source = sharp({ create: { width: 320, height: 160, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } });
+  await page.getByLabel("Reference photo upload", { exact: true }).setInputFiles({ name: "reference.png", mimeType: "image/png", buffer: await source.clone().png().toBuffer() });
+  await expect(page.getByRole("button", { name: "Take a photo", exact: true })).toBeEnabled();
+  await page.getByLabel("Scene photo upload", { exact: true }).setInputFiles({ name: "scene.webp", mimeType: "image/webp", buffer: await source.clone().webp().toBuffer() });
+  const image = page.locator(".round .photo-stage > img");
+  await expect(image).toHaveJSProperty("naturalWidth", 960);
+  await expect(image).toHaveJSProperty("naturalHeight", 960);
+  const pixel = await image.evaluate(element => {
+    const canvas = document.createElement("canvas"); canvas.width = 1; canvas.height = 1;
+    const context = canvas.getContext("2d")!; context.drawImage(element as HTMLImageElement, 0, 0);
+    return Array.from(context.getImageData(0, 0, 1, 1).data);
+  });
+  expect(pixel).toEqual([255, 255, 255, 255]);
+  await mark(page); await lock(page); await reveal(page);
+  const events = await (await request.get(api + "/test/events")).json();
+  expect(events.find((event: { action: string }) => event.action === "create")).toMatchObject({ width: 960, height: 960, referenceWidth: 960, referenceHeight: 960, sceneType: "image/jpeg", referenceType: "image/jpeg" });
+});
+
 test("portrait, landscape, panorama and EXIF rotation stay aligned through mobile resize", async ({ page, request }) => {
   await reference(page);
   for (const [w, h, orientation] of [[1200, 800, 1], [600, 1000, 1], [1800, 450, 1], [3200, 1200, 1], [1000, 600, 6]]) {
@@ -88,9 +132,15 @@ test("denied camera permission requests only after a click and leaves a working 
 
 test("repeated capture, cancel, upload alternative and page hiding stop camera tracks", async ({ page }) => {
   await page.addInitScript(() => {
-    const original = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
     Reflect.set(window, "cameraTracks", []);
-    navigator.mediaDevices.getUserMedia = async constraints => { const stream = await original(constraints); Reflect.get(window, "cameraTracks").push(...stream.getTracks()); return stream; };
+    // Real browser video tracks, with deterministic pixels instead of a camera device.
+    navigator.mediaDevices.getUserMedia = async () => {
+      const canvas = document.createElement("canvas"); canvas.width = 640; canvas.height = 480;
+      const stream = canvas.captureStream(10);
+      const context = canvas.getContext("2d")!; context.fillStyle = "#537d3d"; context.fillRect(0, 0, canvas.width, canvas.height);
+      Reflect.get(window, "cameraTracks").push(...stream.getTracks());
+      return stream;
+    };
   });
   await page.reload(); await reference(page);
   for (let i = 0; i < 2; i++) {

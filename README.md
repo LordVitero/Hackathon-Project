@@ -17,6 +17,17 @@ Open **http://127.0.0.1:3000**. Start by choosing a tightly cropped reference ph
 
 With no backend URL, the frontend explicitly runs a **local simulated demo**. Its fixed example box is independent of the marked answer. No photos are uploaded and demo scores stay separate from real model scores. This is a UI demo, not evidence of model feasibility.
 
+### Test from a phone
+
+Connect the computer and phone to the same Wi-Fi. Stop the existing server, run `ipconfig` to find the computer's Wi-Fi IPv4 address, then run these commands from `frontend` (replace the example IP with yours):
+
+```powershell
+$env:LENNY_DEV_ALLOWED_ORIGINS = "192.168.1.25"
+npx.cmd next dev --hostname 0.0.0.0 --port 3000
+```
+
+Open `http://192.168.1.25:3000` on the phone. The allowed origin lets Next.js serve development updates at that address. Narrow screens stack action buttons and box sliders; touch devices get taller slider controls. Test photo upload, touch annotation, reveal, and rotation in demo mode. Round IDs support local HTTP, but camera access needs HTTPS. A real backend must use a URL reachable by the phone and allow this frontend origin through CORS; `localhost` on the phone refers to the phone itself.
+
 ## Connect the backend
 
 Copy `frontend/.env.example` to `frontend/.env.local` and set:

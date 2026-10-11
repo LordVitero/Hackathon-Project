@@ -9,6 +9,15 @@ export type State = {
   history: History[]; scores: { ai: number; player: number }; demoScores: { ai: number; player: number };
 };
 const fresh = (): State => ({ phase: "empty", reference: null, scene: null, actual: null, id: null, reveal: null, error: "", status: "", history: [], scores: { ai: 0, player: 0 }, demoScores: { ai: 0, player: 0 } });
+function createRoundKey() {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  // randomUUID requires HTTPS; getRandomValues also works for local HTTP phone tests.
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, "0"));
+  return [hex.slice(0, 4), hex.slice(4, 6), hex.slice(6, 8), hex.slice(8, 10), hex.slice(10)].map(part => part.join("")).join("-");
+}
 export class Round {
   state = fresh();
   epoch = 0;
@@ -45,11 +54,11 @@ export class Round {
     this.invalidate();
     const operation = this.operation, epoch = this.epoch;
     const { reference, scene, actual } = this.state;
-    this.key ||= crypto.randomUUID();
     const signal = (this.controller = new AbortController()).signal;
     const current = () => operation === this.operation && epoch === this.epoch;
     this.change({ phase: "seeking", error: "", status: this.demo ? "Locking a simulated guess…" : "Uploading photos and asking the model to find Lenny…" });
     try {
+      this.key ||= createRoundKey();
       let id = this.state.id;
       if (this.demo) {
         if (!id) { id = "demo-" + this.key; this.change({ id }); }
