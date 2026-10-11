@@ -1,6 +1,15 @@
 # Frontend verification — October 10, 2026
 
-## Passed
+## Current frontend audit
+
+- **17 unit tests, all 11 browser scenarios, strict TypeScript, and the production build passed.** The browser suite completed with exit code 0.
+- Both reference and scene uploads were decoded by the test API as 960 × 960 JPEGs. PNG and WebP conversion, white compositing of transparency, EXIF inputs, empty/oversized/unsupported/corrupt files, and recovery with a valid upload were checked.
+- Fixed round creation on local HTTP: browsers may omit `crypto.randomUUID`, so the frontend generates UUIDs with `crypto.getRandomValues` instead. The regression failed before the fix, and unit/browser regressions now pass.
+- Added optional `LENNY_DEV_ALLOWED_ORIGINS` configuration for phone testing. A complete demo round through the computer's Wi-Fi HTTP address passed in a touch-enabled 390px Chrome context, with 960 × 960 images, no horizontal overflow, no page errors, and a connected development-update socket. This is browser emulation, not a physical-phone test.
+- Camera capture and cleanup use actual browser video tracks from a generated canvas stream. This replaces an unreliable Chrome fake device that intermittently reported no camera; the cleanup test passed twice in isolation and in the complete suite. Physical camera behavior remains unverified.
+- The development server was restored without the test API URL. Current desktop/mobile screenshots are available under `frontend/artifacts/`.
+
+## Initial frontend verification
 
 - **16 unit tests:** normalized box coordinates, reverse drawing, invalid geometry, IoU for exact/missed/oversized predictions, strict reveal parsing, multipart image fields, HTTP/JSON/network/timeout errors, duplicate actions, cancellation, out-of-order responses, idempotency-key reuse, round-ID reuse, stale image disposal, frozen answers, separate demo scores, bounded history, and active/late camera-track cleanup.
 - **7 browser scenarios:** installed Chrome on Windows against the test-only loopback API. Both JPEG images actually reached that endpoint; seek requests contained no marked answer. Portrait, landscape, panorama, and EXIF orientation-6 sources stayed aligned at desktop, 390px, and 320px widths. The added 3200px image check verified the uploaded 2400px canonical JPEG. Pointer-drawn and keyboard-adjusted boxes matched uploaded normalized coordinates.

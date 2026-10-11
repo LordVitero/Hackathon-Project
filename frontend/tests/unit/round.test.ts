@@ -13,6 +13,27 @@ function ready(service = api(), demo = false) {
 }
 function deferred<T>() { let resolve!: (v: T) => void; const promise = new Promise<T>(r => { resolve = r; }); return { resolve, promise }; }
 
+test("rounds still lock without randomUUID, using unique UUIDs for new rounds", async () => {
+  const descriptor = Object.getOwnPropertyDescriptor(crypto, "randomUUID");
+  Object.defineProperty(crypto, "randomUUID", { value: undefined, configurable: true });
+  try {
+    const round = ready();
+    await round.seek();
+    assert.equal(round.state.phase, "locked");
+    assert.match(round.key, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    const firstKey = round.key;
+    round.loadScene(round.beginLoad(), photo("new")); round.annotate(actual);
+    await round.seek();
+    assert.equal(round.state.phase, "locked");
+    assert.notEqual(round.key, firstKey);
+    await round.reveal();
+    assert.equal(round.state.scores.ai, 1);
+  } finally {
+    if (descriptor) Object.defineProperty(crypto, "randomUUID", descriptor);
+    else Reflect.deleteProperty(crypto, "randomUUID");
+  }
+});
+
 test("one locked guess, one score, and rematch clears scene but keeps reference and history", async () => {
   let creates = 0, seeks = 0;
   const round = ready(api({ create: async () => { creates++; return "one"; }, seek: async () => { seeks++; } }));
