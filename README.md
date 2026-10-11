@@ -50,7 +50,7 @@ Use HTTPS for both applications in deployment. The FastAPI service must permit t
 - Before seeking, the actual box is editable by dragging a new box or changing four keyboard-accessible edge sliders. After seeking starts, it is frozen.
 - Creation retries reuse an idempotency key. Seek retries reuse the round ID. The backend must lock and deduplicate inference; browser cancellation may not cancel server computation.
 - Seek locks a prediction without revealing it. Reveal returns both boxes and the server's score. A valid `not_found` awards a player point. A failed request never awards a point.
-- IoU is checked against the response's scoring threshold. The fixed winning threshold is 0.50, and the AI box matches the user box dimensions.
+- IoU is checked against the response's scoring threshold. The outline's provisional starting threshold is 0.3; freeze the final rule before real scored play.
 - Detection scores are displayed as model scores, never probabilities of correctness. Review confirmations and adjusted review boxes are session-local notes; they do not submit feedback, retrain the model, or alter the locked answer or score.
 - Rematch clears the current scene, prediction, and marked answer while keeping the reference, session scores, and the last five scenes. Session state resets on refresh. The backend controls its own data retention.
 
@@ -67,18 +67,14 @@ Browser checks use a **test-only API**, synthetic coordinate fixtures, simulated
 
 Unit tests cover normalized geometry, correct/missed/oversized boxes, strict response validation, timeout/error recovery, idempotent retries, stale responses, cancellation, image disposal, and camera lifecycle. Browser tests cover actual multipart uploads, portrait/landscape/panorama/EXIF photos, 320px and 390px layouts, pointer and keyboard annotation, score/history, denied camera access, repeated capture, track cleanup, slow inference, replacing a scene during a request, and automated accessibility checks.
 
-## Demo validation still required
+## Team integration still required
 
-The Python backend implements uploads, CPU OWL-ViT inference, shared seek jobs,
-immutable reveals, and the 50% IoU rule. Before presenting, evaluate held-out
-Lenny scenes, measure CPU latency, and test a second real device. Detection
-threshold 0.1 is provisional; the winning IoU threshold is fixed at 0.50.
-The public OWL-ViT model is Apache-2.0; preserve applicable notices when distributing it.
+The frontend is implemented; the full project is **not yet model-verified or deployed**. Backend and ML work remains assigned to the team per the outline:
 
-## Local CPU model backend
+1. Supply and test the default real Lenny reference and 20–30 real scenes, with held-out evaluation.
+2. Implement FastAPI/Pillow orientation validation, separate answer storage, locked rounds, scoring, idempotency, and a health response distinguishing service availability from model readiness.
+3. Run `google/owlvit-base-patch16` through Transformers/PyTorch, loading once at startup and bounding concurrent inference. The detector receives only the reference and scene, never the answer.
+4. Select fixed detection/scoring thresholds using real tests. No arbitrary-object detection reliability or learning claims are made.
+5. Deploy frontend and backend, test CORS and latency on a second real device, and rehearse a best-of-three demonstration.
 
-See [backend setup](backend/README.md) for installation and startup. The backend
-now connects OWL-ViT to seek/reveal with immutable scoring and retry protection.
-Set `NEXT_PUBLIC_API_BASE_URL=/api` in `frontend/.env.local` to use it; restart
-the frontend. The local Next.js proxy forwards to Python on port 8000.
-Model accuracy and demo latency still require real-image evaluation.
+Planned model attribution: [Google OWL-ViT](https://huggingface.co/google/owlvit-base-patch16), [Transformers documentation](https://huggingface.co/docs/transformers/model_doc/owlvit). Include the model's applicable Apache-2.0 notices when the backend/model is distributed. The frontend currently runs no model.

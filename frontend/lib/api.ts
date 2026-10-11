@@ -30,7 +30,7 @@ export function parseReveal(value: unknown, id: string, actual: Box): Reveal {
   if (typeof m.id !== "string" || !m.id || !unit(m.threshold) || typeof m.inference_ms !== "number" || !Number.isFinite(m.inference_ms) || m.inference_ms < 0) throw new Error("The server returned invalid model metadata.");
   return data as unknown as Reveal;
 }
-export function createApi(base: string, timeoutMs = 180000, fetcher: typeof fetch = fetch): RoundApi {
+export function createApi(base: string, timeoutMs = 60000, fetcher: typeof fetch = fetch): RoundApi {
   async function request(path: string, init: RequestInit, signal: AbortSignal) {
     const root = new URL(base.replace(/\/$/, "") + "/", globalThis.location?.href ?? "http://localhost/");
     if (!["http:", "https:"].includes(root.protocol) || root.username || root.password) throw new Error("Configure an HTTP(S) backend URL without embedded credentials.");

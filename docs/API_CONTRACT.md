@@ -1,6 +1,6 @@
-# Hide Lenny frontend / FastAPI contract
+# Proposed Hide Lenny frontend / FastAPI contract
 
-Implements the proposed defaults in the supplied project outline. The local Python backend implements this contract; real-model accuracy still needs evaluation. Configured requests use this schema strictly; failures never fall back to simulated success.
+Implements the proposed defaults in the supplied project outline. **This is a concrete proposal for the backend team, not a claim that a live backend already implements it.** Configured requests use this schema strictly; failures never fall back to simulated success.
 
 ## Coordinates and images
 
@@ -48,7 +48,7 @@ For repeated creation with the same key and payload, return the **original creat
 {"round_id":"opaque-round-id","state":"complete"}
 ```
 
-Hold this request until inference has completed (frontend timeout: 180 seconds per request). Lock one result or valid `not_found`. Simultaneous/repeated seeks must share the same in-flight computation and return the same locked result, with no new random guess. The frontend does not treat `ready` or `seeking` as completion; asynchronous job protocols require an agreed polling adapter.
+Hold this request until inference has completed (frontend timeout: 60 seconds per request). Lock one result or valid `not_found`. Simultaneous/repeated seeks must share the same in-flight computation and return the same locked result, with no new random guess. The frontend does not treat `ready` or `seeking` as completion; asynchronous job protocols require an agreed polling adapter.
 
 Return non-2xx on inference failure. Do not encode inference errors as `not_found` or player wins. After failures, a safe retry should recover the existing round. If a backend restarts and loses in-memory state, respond with 404/410 so the frontend can display the error and let the user replace the scene.
 

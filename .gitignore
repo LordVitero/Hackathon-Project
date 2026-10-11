@@ -11,7 +11,3 @@ next-env.d.ts
 .venv/
 __pycache__/
 *.pyc
-
-.venv-local/
-
-.model-cache/

@@ -1,46 +1,12 @@
 from io import BytesIO
 import json
-import asyncio
-import logging
-import os
-from contextlib import asynccontextmanager
-from inference import InferenceService
 
 from fastapi import FastAPI, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image, ImageOps, UnidentifiedImageError
 from rounds import RoundStore
 
-logger = logging.getLogger("uvicorn.error")
-inference_service = None
-
-
-@asynccontextmanager
-async def lifespan(app):
-    global inference_service
-    inference_service = None
-    try:
-        # Lazy import lets upload/scoring tests run without downloading weights.
-        from detector import LennyDetector
-        logger.info("Loading OWL-ViT. First startup downloads the model; please wait.")
-        detector = await asyncio.to_thread(
-            LennyDetector,
-            device=os.getenv("LENNY_DEVICE", "cpu"),
-            threshold=float(os.getenv("LENNY_DETECTION_THRESHOLD", "0.1")),
-        )
-        inference_service = InferenceService(round_store, detector)
-        logger.info("Model ready on %s", detector.device)
-    except Exception:
-        logger.exception("Model unavailable. Install requirements and restart the backend.")
-    try:
-        yield
-    finally:
-        if inference_service is not None:
-            await inference_service.close()
-        inference_service = None
-
-
-app = FastAPI(title="Hide Lenny API", lifespan=lifespan)
+app = FastAPI(title="Hide Lenny API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -56,7 +22,7 @@ round_store = RoundStore()
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model_ready": inference_service is not None}
+    return {"status": "ok", "model_ready": False}
 
 
 def read_image(upload: UploadFile) -> Image.Image:
@@ -145,15 +111,3 @@ def create_round(
     reference_bytes = validated_image_bytes(reference_image)
     scene_bytes = validated_image_bytes(scene_image)
     return round_store.create(idempotency_key, reference_bytes, scene_bytes, box)
-
-
-@app.post("/rounds/{round_id}/seek")
-async def seek_round(round_id: str):
-    if inference_service is None:
-        raise HTTPException(503, "Model unavailable. Check backend startup logs and restart.")
-    return await inference_service.seek(round_id)
-
-
-@app.get("/rounds/{round_id}/reveal")
-def reveal_round(round_id: str):
-    return round_store.get_reveal(round_id)
