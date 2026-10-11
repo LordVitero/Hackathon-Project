@@ -1,0 +1,6 @@
+fastapi==0.143.0
+uvicorn==0.54.0
+python-multipart==0.0.32
+pillow==12.3.0
+transformers==4.57.6
+# Install torch/torchvision separately for CPU or your GPU runtime.
