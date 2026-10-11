@@ -3,7 +3,7 @@
 The backend now implements `/health`, `/images/validate`, `/rounds`,
 `/rounds/{id}/seek`, and `/rounds/{id}/reveal`. It loads the public Hugging Face
 `google/owlvit-base-patch16` model once at startup. CPU is the default, so AMD
-cloud access is optional. First startup needs internet to download model files;
+cloud access is not used by the final demo. First startup needs internet to download model files;
 later startups reuse the ignored `backend/.model-cache` directory (or `HF_HOME` if set). No token normally needed.
 
 ## Windows setup
@@ -14,7 +14,7 @@ on Tony's machine; it is excluded from Git.
 
 ```powershell
 python -m venv .venv-local
-.\.venv-local\Scripts\python.exe -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+.\.venv-local\Scripts\python.exe -m pip install -r requirements-cpu.txt --index-url https://download.pytorch.org/whl/cpu
 .\.venv-local\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv-local\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000 --workers 1
 ```

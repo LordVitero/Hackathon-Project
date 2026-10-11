@@ -8,7 +8,7 @@ import { capturePhoto, preparePhoto } from "../lib/photo";
 import { Round, type State } from "../lib/round";
 import type { Box } from "../lib/geometry";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api";
 const REFERENCE_URL = process.env.NEXT_PUBLIC_LENNY_REFERENCE_URL ?? "";
 
 export default function Home() {
